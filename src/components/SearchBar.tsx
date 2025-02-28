@@ -6,7 +6,7 @@ export const SearchBar = () => {
 
   const { searchPlacesByTerm } = useContext(PlacesContext);
 
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const onQueryChange = ( event: ChangeEvent<HTMLInputElement>) => {
     if (debounceRef.current) {
