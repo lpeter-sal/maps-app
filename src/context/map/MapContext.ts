@@ -10,6 +10,7 @@ interface MapContextProps {
 
     //Methods
     setMap: (map: Map) => void;
+    getRouteBetweenPoints: (start: [number, number], ends: [number, number]) => Promise<void>
 }
 
 

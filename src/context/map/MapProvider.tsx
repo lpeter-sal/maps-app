@@ -1,8 +1,10 @@
 import { JSX, useContext, useEffect, useReducer } from "react";
-import { Map, Marker, Popup } from "mapbox-gl";
+import { LngLatBounds, Map, Marker, Popup, SourceSpecification } from "mapbox-gl";
 import { mapReducer } from "./mapReducer";
 import { MapContext } from "./MapContext";
 import { PlacesContext } from "../";
+import { directionsApi } from "../../apis";
+import { DirectionsResponse } from '../../interfaces/directions';
 
 
 
@@ -48,10 +50,15 @@ export const MapProvider = ( {children }: Props ) => {
                                 .addTo( state.map! );
             newMarkers.push( newMarker );
         }
+        //TODO: clean polyline
+        // I need to clean the polyline when the places change or place is void
+        if( state.map?.getLayer('RouteLayer') && places.length === 0 ) {
+            state.map?.removeLayer('RouteLayer');
+            state.map?.removeSource('RouteString');
+        }
 
-        //TODO: Limpiar polylines
+
         dispatch({ type: 'setMarkers', payload: newMarkers });
-
     }, [ places ])
 
     const setMap = ( map: Map ) => {
@@ -74,12 +81,79 @@ export const MapProvider = ( {children }: Props ) => {
 
     }
 
+
+    const getRouteBetweenPoints = async (start: [number, number ], ends: [number, number]) => {
+
+        const resp = await directionsApi.get<DirectionsResponse>(`${start.join(',')};${ends.join(',')}`);
+        const { distance, duration, geometry} = resp.data.routes[0];
+        const { coordinates: coords } = geometry;
+        let kms = distance / 1000;
+            kms = Math.round(kms * 100);
+            kms /= 100;
+
+        let minutes =Math.floor( duration / 60)
+        
+        console.log({ kms, minutes });
+
+        const bounds = new LngLatBounds(
+            start,
+            start
+        );
+
+        for (const coord of coords) {
+            const newCoord: [number, number] = [ coord[0], coord[1] ];
+            bounds.extend( newCoord );
+        }
+
+        state.map?.fitBounds(bounds, {
+            padding: 100
+        });
+
+        // Polyline
+        const sourceData: SourceSpecification = {
+            type: 'geojson',
+            data: {
+                type: 'FeatureCollection',
+                features: [{
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: coords
+                    }
+                }]
+            }
+        }
+
+        if(state.map?.getLayer('RouteLayer')) {
+            state.map?.removeLayer('RouteLayer');
+            state.map?.removeSource('RouteString');
+        }
+
+
+        state.map?.addSource('RouteString', sourceData);
+        state.map?.addLayer({
+            id: 'RouteLayer',
+            type: 'line',
+            source: 'RouteString',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': '#61DAFB',
+                'line-width': 3
+            }
+        });
+    }
+
   return (
     <MapContext.Provider value={{
         ...state,
 
         //Methods
         setMap,
+        getRouteBetweenPoints
     }}>
         { children }
     </MapContext.Provider>
