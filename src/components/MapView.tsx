@@ -1,8 +1,7 @@
 import { useContext, useLayoutEffect, useRef } from "react"
 import { PlacesContext, MapContext } from "../context";
 import { Loading } from "./Loading";
-import { Map, Marker } from 'maplibre-gl';
-
+import { Map } from 'mapbox-gl';
 
 
 export const MapView = () => {
@@ -16,7 +15,7 @@ export const MapView = () => {
       if ( !isLoading ) {
           const map = new Map({
               container: mapDiv.current! , // container ID
-              style: 'https://api.maptiler.com/maps/basic-v2/style.json?key=MaZaAHOMUqlmSFZR2cS2', // style URL
+              style: 'mapbox://styles/mapbox/light-v11', // style URL
               center: userLocation, // starting position [lng, lat]
               zoom: 14 // starting zoom
           });

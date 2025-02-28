@@ -1,4 +1,4 @@
-import { Map } from "maplibre-gl";
+import { Map } from "mapbox-gl";
 import { createContext } from "react";
 
 
